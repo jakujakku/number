@@ -4,22 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>番号確認ページ</title>
+
 <style>
 body{
-  font-family:Arial,sans-serif;
+  font-family: sans-serif;
   background:#f4f6fb;
   max-width:800px;
   margin:auto;
   padding:20px;
 }
+
 .box{
   background:white;
-  padding:20px;
   border-radius:14px;
+  padding:20px;
   margin-bottom:20px;
-  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
 }
-h1,h2{text-align:center;}
+
+h1,h2{
+  text-align:center;
+}
+
 textarea,select,input{
   width:100%;
   padding:10px;
@@ -27,6 +33,7 @@ textarea,select,input{
   margin-top:10px;
   box-sizing:border-box;
 }
+
 button{
   width:100%;
   padding:12px;
@@ -36,51 +43,78 @@ button{
   font-size:16px;
   cursor:pointer;
 }
-.main{background:#5865F2;color:white;}
-.sub{background:#888;color:white;}
+
+.main{
+  background:#5865F2;
+  color:white;
+}
+
 .result{
   text-align:center;
   font-size:30px;
   font-weight:bold;
   margin-top:20px;
 }
-.hidden{display:none;}
-.small{font-size:13px;color:#666;}
+
+.small{
+  font-size:13px;
+  color:#666;
+}
+
+.hidden{
+  display:none;
+}
+
+a{
+  word-break:break-all;
+}
 </style>
 </head>
+
 <body>
 
 <h1>番号確認ページ</h1>
 
 <div class="box">
-<h2>参加者画面</h2>
-<select id="user"></select>
-<button class="main" onclick="showNumber()">番号を見る</button>
-<div class="result" id="result"></div>
-<p class="small">名前一覧が表示されない場合、管理者が共有URLを送ってください。</p>
+  <h2>参加者画面</h2>
+
+  <select id="user"></select>
+
+  <button class="main" onclick="showNumber()">番号を見る</button>
+
+  <div class="result" id="result"></div>
+
+  <p class="small">
+    管理者から送られたURLを開いて、自分の名前を選んでください。
+  </p>
 </div>
 
 <div class="box hidden" id="adminBox">
-<h2>管理者画面</h2>
-<input type="password" id="pw" placeholder="管理者パスワード">
-<textarea id="names" rows="8" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
-<button class="main" onclick="draw()">抽選して共有URL作成</button>
-<div id="shareUrl" class="small"></div>
+  <h2>管理者画面</h2>
+
+  <input type="password" id="pw" placeholder="管理者パスワード">
+
+  <textarea id="names" rows="8" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
+
+  <button class="main" onclick="draw()">抽選して共有URLを作成</button>
+
+  <div class="small" id="shareUrl"></div>
 </div>
 
 <script>
 let params = new URLSearchParams(location.search);
 let data = {};
-let viewed = {};
 
-if(params.get("admin")==="1234"){
+if(params.get("admin") === "1234"){
   document.getElementById("adminBox").classList.remove("hidden");
 }
 
 if(params.get("data")){
   try{
-    data = JSON.parse(atob(params.get("data")));
-  }catch(e){}
+    data = JSON.parse(decodeURIComponent(escape(atob(params.get("data")))));
+  }catch(e){
+    data = {};
+  }
 }
 
 loadUsers();
@@ -90,7 +124,7 @@ function loadUsers(){
   select.innerHTML = "";
 
   for(let name in data){
-    const op = document.createElement("option");
+    let op = document.createElement("option");
     op.value = name;
     op.textContent = name;
     select.appendChild(op);
@@ -99,26 +133,35 @@ function loadUsers(){
 
 function draw(){
   const pw = document.getElementById("pw").value;
+
   if(pw !== "1234"){
     alert("パスワードが違います");
     return;
   }
 
   const text = document.getElementById("names").value.trim();
+
   if(!text){
     alert("名前を入力してください");
     return;
   }
 
-  const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
+  const names = text.split("\n").map(v => v.trim()).filter(v => v);
+
+  if(names.length > 100){
+    alert("100人までです");
+    return;
+  }
 
   let nums = [];
-  for(let i=1;i<=100;i++) nums.push(i);
+  for(let i=1;i<=100;i++){
+    nums.push(i);
+  }
 
   data = {};
 
-  names.forEach(name=>{
-    const r = Math.floor(Math.random()*nums.length);
+  names.forEach(name => {
+    let r = Math.floor(Math.random() * nums.length);
     data[name] = nums[r];
     nums.splice(r,1);
   });
@@ -127,19 +170,22 @@ function draw(){
   const url = location.origin + location.pathname + "?data=" + encoded;
 
   document.getElementById("shareUrl").innerHTML =
-    "このURLを参加者へ送ってください：<br><a href='"+url+"' target='_blank'>" + url + "</a>";
+    "このURLを参加者へ送ってください：<br><br>" +
+    "<a href='" + url + "' target='_blank'>" + url + "</a>";
+
+  loadUsers();
 }
 
 function showNumber(){
   const name = document.getElementById("user").value;
-  const result = document.getElementById("result");
 
   if(!name){
-    result.innerHTML = "名前一覧がありません";
+    document.getElementById("result").innerHTML = "名前一覧がありません";
     return;
   }
 
-  result.innerHTML = name + " さんの番号は<br>" + data[name];
+  document.getElementById("result").innerHTML =
+    name + " さんの番号は<br>" + data[name];
 }
 </script>
 
