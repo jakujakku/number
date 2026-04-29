@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>番号抽選システム</title>
+
 <style>
 body{
   font-family:sans-serif;
@@ -12,6 +13,7 @@ body{
   margin:auto;
   padding:20px;
 }
+
 .box{
   background:#fff;
   border-radius:14px;
@@ -19,7 +21,11 @@ body{
   margin-bottom:20px;
   box-shadow:0 4px 10px rgba(0,0,0,.08);
 }
-h1,h2{text-align:center;}
+
+h1,h2{
+  text-align:center;
+}
+
 textarea,input{
   width:100%;
   padding:10px;
@@ -27,6 +33,7 @@ textarea,input{
   margin-top:10px;
   box-sizing:border-box;
 }
+
 button{
   width:100%;
   padding:12px;
@@ -36,37 +43,45 @@ button{
   font-size:16px;
   cursor:pointer;
 }
+
 .main{
   background:#5865F2;
   color:#fff;
 }
+
 .result{
   font-size:30px;
   font-weight:bold;
   text-align:center;
   margin-top:20px;
 }
+
 .row{
   border-bottom:1px solid #eee;
   padding:10px 0;
   word-break:break-all;
 }
+
 .hidden{
   display:none;
 }
+
 .small{
   font-size:13px;
   color:#666;
 }
 </style>
 </head>
+
 <body>
 
 <h1>番号抽選システム</h1>
 
 <div class="box">
   <h2>参加者ページ</h2>
-  <div class="result" id="userResult">管理者から送られた専用URLを開いてください</div>
+  <div class="result" id="userResult">
+    管理者から送られた専用URLを開いてください
+  </div>
 </div>
 
 <div class="box hidden" id="adminBox">
@@ -78,13 +93,13 @@ button{
 
   <button class="main" onclick="draw()">抽選して専用URL生成</button>
 
-  <div id="links"></div>
+  <div id="links" class="small"></div>
 </div>
 
 <script>
 const params = new URLSearchParams(location.search);
 
-if(params.get("admin")==="1234"){
+if(params.get("admin") === "1234"){
   document.getElementById("adminBox").classList.remove("hidden");
 }
 
@@ -102,12 +117,12 @@ function draw(){
 
   const text = document.getElementById("names").value.trim();
 
-  if(!text"){
+  if(!text){
     alert("名前を入力してください");
     return;
   }
 
-  const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
+  const names = text.split("\n").map(v => v.trim()).filter(v => v);
 
   if(names.length > 100){
     alert("100人までです");
@@ -115,12 +130,14 @@ function draw(){
   }
 
   let nums = [];
-  for(let i=1;i<=100;i++) nums.push(i);
+  for(let i=1;i<=100;i++){
+    nums.push(i);
+  }
 
   let html = "";
 
-  names.forEach(name=>{
-    let r = Math.floor(Math.random()*nums.length);
+  names.forEach(name => {
+    let r = Math.floor(Math.random() * nums.length);
     let num = nums[r];
     nums.splice(r,1);
 
@@ -132,7 +149,11 @@ function draw(){
     let code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     let url = location.origin + location.pathname + "?u=" + code;
 
-    html += "<div class='row'><b>" + name + "</b><br>" + url + "</div>";
+    html +=
+      "<div class='row'>" +
+      "<b>" + name + "</b><br>" +
+      url +
+      "</div>";
   });
 
   document.getElementById("links").innerHTML = html;
@@ -147,7 +168,8 @@ function showUser(){
       data.n + " さんの番号は<br>" + data.v;
 
   }catch(e){
-    document.getElementById("userResult").innerHTML = "無効なURLです";
+    document.getElementById("userResult").innerHTML =
+      "無効なURLです";
   }
 }
 </script>
