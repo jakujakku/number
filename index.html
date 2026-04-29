@@ -3,26 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>番号抽選システム</title>
+<title>番号確認ページ</title>
 <style>
 body{
   font-family:Arial,sans-serif;
   background:#f4f6fb;
-  margin:0;
-  padding:20px;
   max-width:800px;
   margin:auto;
+  padding:20px;
 }
 .box{
   background:white;
-  border-radius:14px;
   padding:20px;
+  border-radius:14px;
   margin-bottom:20px;
   box-shadow:0 4px 10px rgba(0,0,0,.08);
 }
-h1,h2{
-  text-align:center;
-}
+h1,h2{text-align:center;}
 textarea,select,input{
   width:100%;
   padding:10px;
@@ -40,25 +37,15 @@ button{
   cursor:pointer;
 }
 .main{background:#5865F2;color:white;}
-.sub{background:#999;color:white;}
+.sub{background:#888;color:white;}
 .result{
   text-align:center;
-  font-size:28px;
+  font-size:30px;
   font-weight:bold;
   margin-top:20px;
 }
-.small{
-  font-size:13px;
-  color:#666;
-}
-.hidden{
-  display:none;
-}
-.linkbtn{
-  background:#222;
-  color:white;
-  font-size:14px;
-}
+.hidden{display:none;}
+.small{font-size:13px;color:#666;}
 </style>
 </head>
 <body>
@@ -70,31 +57,33 @@ button{
 <select id="user"></select>
 <button class="main" onclick="showNumber()">番号を見る</button>
 <div class="result" id="result"></div>
-<p class="small">自分の名前を選んで番号を確認してください。</p>
-</div>
-
-<div class="box">
-<button class="linkbtn" onclick="toggleAdmin()">管理者はこちら</button>
+<p class="small">名前一覧が表示されない場合、管理者が共有URLを送ってください。</p>
 </div>
 
 <div class="box hidden" id="adminBox">
 <h2>管理者画面</h2>
-<input type="password" id="pass" placeholder="管理者パスワード（初期:1234）">
+<input type="password" id="pw" placeholder="管理者パスワード">
 <textarea id="names" rows="8" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
-<button class="main" onclick="draw()">抽選開始</button>
-<button class="sub" onclick="resetAll()">全リセット</button>
+<button class="main" onclick="draw()">抽選して共有URL作成</button>
+<div id="shareUrl" class="small"></div>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("lotteryData")) || {};
-let viewed = JSON.parse(localStorage.getItem("viewedData")) || {};
+let params = new URLSearchParams(location.search);
+let data = {};
+let viewed = {};
+
+if(params.get("admin")==="1234"){
+  document.getElementById("adminBox").classList.remove("hidden");
+}
+
+if(params.get("data")){
+  try{
+    data = JSON.parse(atob(params.get("data")));
+  }catch(e){}
+}
 
 loadUsers();
-
-function save(){
-  localStorage.setItem("lotteryData", JSON.stringify(data));
-  localStorage.setItem("viewedData", JSON.stringify(viewed));
-}
 
 function loadUsers(){
   const select = document.getElementById("user");
@@ -108,45 +97,14 @@ function loadUsers(){
   }
 }
 
-function showNumber(){
-  const name = document.getElementById("user").value;
-  const result = document.getElementById("result");
-
-  if(!name){
-    result.innerHTML = "まだ抽選されていません";
-    return;
-  }
-
-  if(viewed[name]){
-    result.innerHTML = "確認済みです";
-    return;
-  }
-
-  viewed[name] = true;
-  save();
-
-  result.innerHTML = name + " さんの番号は<br>" + data[name];
-}
-
-function toggleAdmin(){
-  const pw = prompt("管理者パスワードを入力してください");
-  if(pw === "1234"){
-    document.getElementById("adminBox").classList.remove("hidden");
-    window.scrollTo(0, document.body.scrollHeight);
-  }else{
-    alert("パスワードが違います");
-  }
-}
-
 function draw(){
-  const pw = document.getElementById("pass").value;
+  const pw = document.getElementById("pw").value;
   if(pw !== "1234"){
     alert("パスワードが違います");
     return;
   }
 
   const text = document.getElementById("names").value.trim();
-
   if(!text){
     alert("名前を入力してください");
     return;
@@ -154,46 +112,34 @@ function draw(){
 
   const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
 
-  if(names.length > 100){
-    alert("100人までです");
-    return;
-  }
-
   let nums = [];
   for(let i=1;i<=100;i++) nums.push(i);
 
   data = {};
-  viewed = {};
 
   names.forEach(name=>{
     const r = Math.floor(Math.random()*nums.length);
     data[name] = nums[r];
     nums.splice(r,1);
-    viewed[name] = false;
   });
 
-  save();
-  loadUsers();
-  document.getElementById("result").innerHTML = "";
-  alert("抽選完了！");
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const url = location.origin + location.pathname + "?data=" + encoded;
+
+  document.getElementById("shareUrl").innerHTML =
+    "このURLを参加者へ送ってください：<br><a href='"+url+"' target='_blank'>" + url + "</a>";
 }
 
-function resetAll(){
-  const pw = document.getElementById("pass").value;
+function showNumber(){
+  const name = document.getElementById("user").value;
+  const result = document.getElementById("result");
 
-  if(pw !== "1234"){
-    alert("パスワードが違います");
+  if(!name){
+    result.innerHTML = "名前一覧がありません";
     return;
   }
 
-  if(confirm("全データを削除しますか？")){
-    data = {};
-    viewed = {};
-    save();
-    loadUsers();
-    document.getElementById("result").innerHTML = "";
-    alert("リセットしました");
-  }
+  result.innerHTML = name + " さんの番号は<br>" + data[name];
 }
 </script>
 
