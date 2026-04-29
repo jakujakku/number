@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>番号抽選システム</title>
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#f4f6fb;
+  margin:0;
+  padding:20px;
+  max-width:800px;
+  margin:auto;
+}
+.box{
+  background:white;
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+h1,h2{
+  text-align:center;
+}
+textarea,select,input{
+  width:100%;
+  padding:10px;
+  font-size:16px;
+  margin-top:10px;
+  box-sizing:border-box;
+}
+button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  cursor:pointer;
+}
+.main{background:#5865F2;color:white;}
+.sub{background:#999;color:white;}
+.result{
+  text-align:center;
+  font-size:28px;
+  font-weight:bold;
+  margin-top:20px;
+}
+.small{
+  font-size:13px;
+  color:#666;
+}
+.hidden{
+  display:none;
+}
+</style>
+</head>
+<body>
+
+<h1>番号抽選システム</h1>
+
+<div class="box">
+<h2>管理者画面</h2>
+<input type="password" id="pass" placeholder="管理者パスワード（初期:1234）">
+<textarea id="names" rows="8" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
+<button class="main" onclick="draw()">抽選開始</button>
+<button class="sub" onclick="resetAll()">全リセット</button>
+<p class="small">抽選後、参加者は下の画面から自分の番号だけ確認できます。</p>
+</div>
+
+<div class="box">
+<h2>参加者画面</h2>
+<select id="user"></select>
+<button class="main" onclick="showNumber()">番号を見る</button>
+<div class="result" id="result"></div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("lotteryData")) || {};
+let viewed = JSON.parse(localStorage.getItem("viewedData")) || {};
+
+loadUsers();
+
+function save(){
+  localStorage.setItem("lotteryData", JSON.stringify(data));
+  localStorage.setItem("viewedData", JSON.stringify(viewed));
+}
+
+function draw(){
+  const pw = document.getElementById("pass").value;
+  if(pw !== "1234"){
+    alert("パスワードが違います");
+    return;
+  }
+
+  const text = document.getElementById("names").value.trim();
+  if(!text){
+    alert("名前を入力してください");
+    return;
+  }
+
+  const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
+
+  if(names.length > 100){
+    alert("100人までです");
+    return;
+  }
+
+  let nums = [];
+  for(let i=1;i<=100;i++) nums.push(i);
+
+  data = {};
+  viewed = {};
+
+  names.forEach(name=>{
+    const r = Math.floor(Math.random()*nums.length);
+    data[name] = nums[r];
+    nums.splice(r,1);
+    viewed[name] = false;
+  });
+
+  save();
+  loadUsers();
+  document.getElementById("result").innerHTML = "";
+  alert("抽選完了！");
+}
+
+function loadUsers(){
+  const select = document.getElementById("user");
+  select.innerHTML = "";
+
+  for(let name in data){
+    const op = document.createElement("option");
+    op.value = name;
+    op.textContent = name;
+    select.appendChild(op);
+  }
+}
+
+function showNumber(){
+  const name = document.getElementById("user").value;
+  const result = document.getElementById("result");
+
+  if(!name){
+    result.innerHTML = "まだ抽選されていません";
+    return;
+  }
+
+  if(viewed[name]){
+    result.innerHTML = "確認済みです";
+    return;
+  }
+
+  viewed[name] = true;
+  save();
+
+  result.innerHTML = name + " さんの番号は<br>" + data[name];
+}
+
+function resetAll(){
+  const pw = document.getElementById("pass").value;
+  if(pw !== "1234"){
+    alert("パスワードが違います");
+    return;
+  }
+
+  if(confirm("全データを消しますか？")){
+    data = {};
+    viewed = {};
+    save();
+    loadUsers();
+    document.getElementById("result").innerHTML = "";
+    alert("リセットしました");
+  }
+}
+</script>
+
+</body>
+</html>
