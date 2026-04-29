@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>番号抽選システム</title>
+<title>固定URL番号抽選システム</title>
 <style>
 body{
   font-family:sans-serif;
@@ -38,7 +38,7 @@ button{
 }
 .main{background:#5865F2;color:#fff;}
 .result{
-  font-size:28px;
+  font-size:32px;
   font-weight:bold;
   text-align:center;
   margin-top:20px;
@@ -48,18 +48,22 @@ button{
   padding:10px 0;
   word-break:break-all;
 }
-.small{font-size:13px;color:#666;}
-.hidden{display:none;}
-a{word-break:break-all;}
+.small{
+  font-size:13px;
+  color:#666;
+}
+.hidden{
+  display:none;
+}
 </style>
 </head>
 <body>
 
-<h1>番号抽選システム</h1>
+<h1>固定URL番号抽選システム</h1>
 
-<div class="box" id="userBox">
+<div class="box">
   <h2>参加者ページ</h2>
-  <div class="result" id="userResult">URLを確認中...</div>
+  <div class="result" id="userResult">読み込み中...</div>
 </div>
 
 <div class="box hidden" id="adminBox">
@@ -69,22 +73,25 @@ a{word-break:break-all;}
 
   <textarea id="names" rows="10" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
 
-  <button class="main" onclick="draw()">抽選して専用URL生成</button>
+  <button class="main" onclick="draw()">抽選して更新</button>
 
   <div id="links"></div>
 </div>
 
 <script>
 const params = new URLSearchParams(location.search);
+let data = JSON.parse(localStorage.getItem("fixedLotteryData")) || {};
 
 if(params.get("admin")==="1234"){
   document.getElementById("adminBox").classList.remove("hidden");
+  showLinks();
 }
 
-if(params.get("u")){
-  showUser();
+if(params.get("user")){
+  showUser(params.get("user"));
 }else{
-  document.getElementById("userResult").innerHTML="管理者から送られた専用URLを開いてください";
+  document.getElementById("userResult").innerHTML =
+    "管理者から送られたURLを開いてください";
 }
 
 function draw(){
@@ -112,20 +119,26 @@ function draw(){
   let nums = [];
   for(let i=1;i<=100;i++) nums.push(i);
 
-  let html = "";
+  data = {};
 
   names.forEach(name=>{
     let r = Math.floor(Math.random()*nums.length);
-    let num = nums[r];
+    data[name] = nums[r];
     nums.splice(r,1);
+  });
 
-    let payload = {
-      n:name,
-      v:num
-    };
+  localStorage.setItem("fixedLotteryData", JSON.stringify(data));
 
-    let code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    let url = location.origin + location.pathname + "?u=" + code;
+  showLinks();
+
+  alert("抽選結果を更新しました");
+}
+
+function showLinks(){
+  let html = "";
+
+  for(let name in data){
+    let url = location.origin + location.pathname + "?user=" + encodeURIComponent(name);
 
     html += `
       <div class="row">
@@ -133,22 +146,18 @@ function draw(){
         ${url}
       </div>
     `;
-  });
+  }
 
   document.getElementById("links").innerHTML = html;
 }
 
-function showUser(){
-  try{
-    let raw = params.get("u");
-    let data = JSON.parse(decodeURIComponent(escape(atob(raw))));
-
+function showUser(name){
+  if(data[name] !== undefined){
     document.getElementById("userResult").innerHTML =
-      data.n + " さんの番号は<br>" + data.v;
-
-  }catch(e){
+      name + " さんの番号は<br>" + data[name];
+  }else{
     document.getElementById("userResult").innerHTML =
-      "無効なURLです";
+      "まだ抽選されていません";
   }
 }
 </script>
