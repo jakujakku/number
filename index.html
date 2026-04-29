@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>固定URL番号抽選システム</title>
+<title>固定URL番号抽選</title>
 <style>
 body{
   font-family:sans-serif;
@@ -43,23 +43,18 @@ button{
   text-align:center;
   margin-top:20px;
 }
+.small{font-size:13px;color:#666;}
+.hidden{display:none;}
 .row{
   border-bottom:1px solid #eee;
   padding:10px 0;
   word-break:break-all;
 }
-.small{
-  font-size:13px;
-  color:#666;
-}
-.hidden{
-  display:none;
-}
 </style>
 </head>
 <body>
 
-<h1>固定URL番号抽選システム</h1>
+<h1>固定URL番号抽選</h1>
 
 <div class="box">
   <h2>参加者ページ</h2>
@@ -68,40 +63,44 @@ button{
 
 <div class="box hidden" id="adminBox">
   <h2>管理者画面</h2>
-
-  <input type="password" id="pw" placeholder="管理者パスワード（初期:1234）">
-
   <textarea id="names" rows="10" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
-
-  <button class="main" onclick="draw()">抽選して更新</button>
-
-  <div id="links"></div>
+  <button class="main" onclick="makeData()">抽選して data.json を作成</button>
+  <div id="output" class="small"></div>
 </div>
 
 <script>
 const params = new URLSearchParams(location.search);
-let data = JSON.parse(localStorage.getItem("fixedLotteryData")) || {};
 
 if(params.get("admin")==="1234"){
   document.getElementById("adminBox").classList.remove("hidden");
-  showLinks();
 }
 
 if(params.get("user")){
-  showUser(params.get("user"));
+  loadUser(params.get("user"));
 }else{
   document.getElementById("userResult").innerHTML =
     "管理者から送られたURLを開いてください";
 }
 
-function draw(){
-  const pw = document.getElementById("pw").value;
+async function loadUser(name){
+  try{
+    const res = await fetch("data.json?" + Date.now());
+    const data = await res.json();
 
-  if(pw !== "1234"){
-    alert("パスワードが違います");
-    return;
+    if(data[name] !== undefined){
+      document.getElementById("userResult").innerHTML =
+        name + " さんの番号は<br>" + data[name];
+    }else{
+      document.getElementById("userResult").innerHTML =
+        "まだ抽選されていません";
+    }
+  }catch(e){
+    document.getElementById("userResult").innerHTML =
+      "data.json がありません";
   }
+}
 
+function makeData(){
   const text = document.getElementById("names").value.trim();
 
   if(!text){
@@ -111,15 +110,10 @@ function draw(){
 
   const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
 
-  if(names.length > 100){
-    alert("100人までです");
-    return;
-  }
-
   let nums = [];
   for(let i=1;i<=100;i++) nums.push(i);
 
-  data = {};
+  let data = {};
 
   names.forEach(name=>{
     let r = Math.floor(Math.random()*nums.length);
@@ -127,38 +121,19 @@ function draw(){
     nums.splice(r,1);
   });
 
-  localStorage.setItem("fixedLotteryData", JSON.stringify(data));
+  let json = JSON.stringify(data, null, 2);
 
-  showLinks();
-
-  alert("抽選結果を更新しました");
-}
-
-function showLinks(){
-  let html = "";
+  let html = "この内容を data.json に貼り付けてください。<br><br>";
+  html += "<pre>" + json + "</pre>";
 
   for(let name in data){
-    let url = location.origin + location.pathname + "?user=" + encodeURIComponent(name);
-
-    html += `
-      <div class="row">
-        <b>${name}</b><br>
-        ${url}
-      </div>
-    `;
+    html += "<div class='row'>" +
+      name + "<br>" +
+      location.origin + location.pathname + "?user=" + encodeURIComponent(name) +
+      "</div>";
   }
 
-  document.getElementById("links").innerHTML = html;
-}
-
-function showUser(name){
-  if(data[name] !== undefined){
-    document.getElementById("userResult").innerHTML =
-      name + " さんの番号は<br>" + data[name];
-  }else{
-    document.getElementById("userResult").innerHTML =
-      "まだ抽選されていません";
-  }
+  document.getElementById("output").innerHTML = html;
 }
 </script>
 
