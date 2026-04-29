@@ -54,26 +54,35 @@ button{
 .hidden{
   display:none;
 }
+.linkbtn{
+  background:#222;
+  color:white;
+  font-size:14px;
+}
 </style>
 </head>
 <body>
 
-<h1>番号抽選システム</h1>
-
-<div class="box">
-<h2>管理者画面</h2>
-<input type="password" id="pass" placeholder="管理者パスワード（初期:1234）">
-<textarea id="names" rows="8" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
-<button class="main" onclick="draw()">抽選開始</button>
-<button class="sub" onclick="resetAll()">全リセット</button>
-<p class="small">抽選後、参加者は下の画面から自分の番号だけ確認できます。</p>
-</div>
+<h1>番号確認ページ</h1>
 
 <div class="box">
 <h2>参加者画面</h2>
 <select id="user"></select>
 <button class="main" onclick="showNumber()">番号を見る</button>
 <div class="result" id="result"></div>
+<p class="small">自分の名前を選んで番号を確認してください。</p>
+</div>
+
+<div class="box">
+<button class="linkbtn" onclick="toggleAdmin()">管理者はこちら</button>
+</div>
+
+<div class="box hidden" id="adminBox">
+<h2>管理者画面</h2>
+<input type="password" id="pass" placeholder="管理者パスワード（初期:1234）">
+<textarea id="names" rows="8" placeholder="1行に1人ずつ入力&#10;Jack&#10;Tom&#10;Yuki"></textarea>
+<button class="main" onclick="draw()">抽選開始</button>
+<button class="sub" onclick="resetAll()">全リセット</button>
 </div>
 
 <script>
@@ -85,45 +94,6 @@ loadUsers();
 function save(){
   localStorage.setItem("lotteryData", JSON.stringify(data));
   localStorage.setItem("viewedData", JSON.stringify(viewed));
-}
-
-function draw(){
-  const pw = document.getElementById("pass").value;
-  if(pw !== "1234"){
-    alert("パスワードが違います");
-    return;
-  }
-
-  const text = document.getElementById("names").value.trim();
-  if(!text){
-    alert("名前を入力してください");
-    return;
-  }
-
-  const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
-
-  if(names.length > 100){
-    alert("100人までです");
-    return;
-  }
-
-  let nums = [];
-  for(let i=1;i<=100;i++) nums.push(i);
-
-  data = {};
-  viewed = {};
-
-  names.forEach(name=>{
-    const r = Math.floor(Math.random()*nums.length);
-    data[name] = nums[r];
-    nums.splice(r,1);
-    viewed[name] = false;
-  });
-
-  save();
-  loadUsers();
-  document.getElementById("result").innerHTML = "";
-  alert("抽選完了！");
 }
 
 function loadUsers(){
@@ -158,14 +128,65 @@ function showNumber(){
   result.innerHTML = name + " さんの番号は<br>" + data[name];
 }
 
-function resetAll(){
+function toggleAdmin(){
+  const pw = prompt("管理者パスワードを入力してください");
+  if(pw === "1234"){
+    document.getElementById("adminBox").classList.remove("hidden");
+    window.scrollTo(0, document.body.scrollHeight);
+  }else{
+    alert("パスワードが違います");
+  }
+}
+
+function draw(){
   const pw = document.getElementById("pass").value;
   if(pw !== "1234"){
     alert("パスワードが違います");
     return;
   }
 
-  if(confirm("全データを消しますか？")){
+  const text = document.getElementById("names").value.trim();
+
+  if(!text){
+    alert("名前を入力してください");
+    return;
+  }
+
+  const names = text.split("\n").map(v=>v.trim()).filter(v=>v);
+
+  if(names.length > 100){
+    alert("100人までです");
+    return;
+  }
+
+  let nums = [];
+  for(let i=1;i<=100;i++) nums.push(i);
+
+  data = {};
+  viewed = {};
+
+  names.forEach(name=>{
+    const r = Math.floor(Math.random()*nums.length);
+    data[name] = nums[r];
+    nums.splice(r,1);
+    viewed[name] = false;
+  });
+
+  save();
+  loadUsers();
+  document.getElementById("result").innerHTML = "";
+  alert("抽選完了！");
+}
+
+function resetAll(){
+  const pw = document.getElementById("pass").value;
+
+  if(pw !== "1234"){
+    alert("パスワードが違います");
+    return;
+  }
+
+  if(confirm("全データを削除しますか？")){
     data = {};
     viewed = {};
     save();
